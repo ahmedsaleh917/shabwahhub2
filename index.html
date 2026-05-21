@@ -1,1 +1,505 @@
 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>شبوة HUB | منصة العرب الاجتماعية</title>
+  
+  <!-- الخطوط -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- التنسيقات (الترتيب مهم جداً!) -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">  <!-- ✅ أضيف -->
+  
+  <!-- الأيقونات (Font Awesome احتياطي) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>
+// اعتراض الأخطاء وعرضها
+window.onerror = function(msg, url, line, col, error) {
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #f00;
+    color: #fff;
+    padding: 15px;
+    font-size: 14px;
+    z-index: 99999;
+    font-family: monospace;
+  `;
+  errorDiv.innerHTML = `
+    <strong>❌ خطأ في JavaScript:</strong><br>
+    ${msg}<br>
+    <small>السطر: ${line}</small>
+  `;
+  document.body.appendChild(errorDiv);
+  return false;
+};
+</script>
+
+</head>
+
+<body class="app-container">
+
+  <!-- شاشة التحميل -->
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-content">
+      <img src="img/logo.png" alt="شبوة HUB" class="splash-logo">
+      <h1 class="gold-text username">شبوة <span class="gold-text">HUB</span></h1>
+      <p class="splash-tagline">منصة العرب الاجتماعية</p>
+      <div class="loading-bar">
+        <div class="loading-progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نموذج الدخول/التسجيل -->
+  <div id="auth-modal" class="auth-modal hidden">
+    <!-- سيتم تحميله ديناميكياً من auth.js -->
+  </div>
+
+  <!-- التطبيق الرئيسي -->
+  <div id="main-app" class="main-app hidden">
+    
+    <!-- 👑 الهيدر العلوي - شبوة HUB -->
+    <header class="app-header">
+      <div class="header-top">
+        <img src="img/logo.png" alt="شعار" class="header-logo">
+        <h1 class="app-title username">شبوة <span class="gold-text">HUB</span></h1>      </div>
+      
+      <!-- خانة البحث -->
+      <div class="header-search">
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>  <!-- ✅ تم التعديل -->
+          <input type="text" id="search-input" placeholder="ابحث عن مستخدم بالاسم أو @username..." autocomplete="off">
+          <div id="search-results" class="search-results hidden"></div>
+        </div>
+      </div>
+      
+      <!-- أزرار الإجراءات -->
+      <div class="header-actions">
+        <button id="btn-admin" class="icon-btn" title="لوحة التحكم" onclick="loadAdminPanel()">
+          <i class="fas fa-shield-alt"></i>  <!-- ✅ تم التعديل -->
+          <span id="admin-badge" class="badge badge-danger hidden">0</span>
+        </button>
+        <button id="btn-messages" class="icon-btn" title="الرسائل" onclick="loadPage('messages')">
+          <img src="img/icons/messages.svg" class="sh-icon" alt="رسائل" style="width:20px;height:20px">
+          <span id="messages-badge" class="badge badge-gold hidden">0</span>
+        </button>
+        <button id="btn-notifications" class="icon-btn" title="الإشعارات" onclick="loadPage('notifications')">
+          <img src="img/icons/notifications.svg" class="sh-icon" id="notif-icon" alt="إشعارات" style="width:20px;height:20px">
+          <span id="notifications-badge" class="badge badge-gold hidden">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- محتوى الصفحات -->
+    <main id="page-content" class="page-content">
+      
+      <!-- حاوية الخلاصة (الرئيسية) -->
+      <div id="feed-container" class="feed-container active">
+        
+        <!-- تبويبات المحتوى -->
+        <div class="feed-tabs">
+          <button class="tab-btn active" data-tab="trending" onclick="switchFeedTab('trending')">
+            <i class="fas fa-fire"></i> الرائج
+          </button>
+          <button class="tab-btn" data-tab="following" onclick="switchFeedTab('following')">
+            <i class="fas fa-user-friends"></i> المتابعين
+          </button>
+        </div>
+        
+        <!-- حاوية المنشورات -->
+        <div id="posts-list" class="posts-list">
+          <div class="loading-posts">
+            <div class="spinner"></div>
+            <p>جاري تحميل المنشورات...</p>
+          </div>        </div>
+        
+        <!-- مؤشر التحميل اللانهائي -->
+        <div id="infinite-loader" class="infinite-loader hidden">
+          <div class="spinner spinner-sm"></div>
+        </div>
+      </div>
+      
+      <!-- حاوية الرسائل -->
+      <div id="messages-container" class="feed-container hidden">
+        <div class="page-header">
+          <h3>الرسائل الخاصة</h3>
+        </div>
+        <div id="chat-list" class="chat-list">
+          <div class="loading-posts"><div class="spinner"></div><p>جاري التحميل...</p></div>
+        </div>
+      </div>
+      
+      <!-- حاوية الإشعارات -->
+      <div id="notifications-container" class="feed-container hidden">
+        <div class="page-header">
+          <h3>الإشعارات</h3>
+          <button class="btn btn-sm btn-secondary" onclick="markAllAsRead()">
+            <i class="fas fa-check-double"></i> تحديد الكل كمقروء
+          </button>
+        </div>
+        <div id="notifications-list" class="notifications-list">
+          <div class="loading-posts"><div class="spinner"></div><p>جاري التحميل...</p></div>
+        </div>
+      </div>
+      
+      <!-- حاوية الملف الشخصي -->
+      <div id="profile-container" class="feed-container hidden">
+        <div class="loading-posts"><div class="spinner"></div><p>جاري التحميل...</p></div>
+      </div>
+      
+      <!-- حاوية لوحة التحكم -->
+      <div id="admin-container" class="feed-container hidden">
+        <div class="page-header">
+          <h3>🛡️ لوحة التحكم</h3>
+        </div>
+        <div class="admin-panel">
+          <div class="empty-state">
+            <i class="fas fa-shield-alt"></i>
+            <p>جاري تحميل لوحة التحكم...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- 🎯 الهيدر السفلي -->
+    <nav class="app-bottom-nav">
+      
+      <!-- زر الرئيسية -->
+      <button class="nav-btn active" data-page="feed" onclick="switchTab('feed', this)">
+        <img src="img/icons/home.svg" class="nav-icon sh-icon active" alt="الرئيسية" style="width:24px;height:24px">
+        <span>الرئيسية</span>
+      </button>
+      
+      <!-- زر الرسائل -->
+      <button class="nav-btn" data-page="messages" onclick="switchTab('messages', this)">
+        <img src="img/icons/messages.svg" class="nav-icon sh-icon" alt="الرسائل" style="width:24px;height:24px">
+        <span>الرسائل</span>
+        <span id="nav-msg-badge" class="nav-badge hidden">0</span>
+      </button>
+      
+      <!-- زر النشر الدائري -->
+      <button class="nav-btn nav-post-btn" id="btn-create-post" onclick="openPostModal()">
+        <img src="img/icons/post.svg" class="post-icon" alt="نشر" style="width:28px;height:28px">
+      </button>
+      
+      <!-- زر الإشعارات -->
+      <button class="nav-btn" data-page="notifications" onclick="switchTab('notifications', this)">
+        <img src="img/icons/notifications.svg" class="nav-icon sh-icon" id="nav-notif-icon" alt="الإشعارات" style="width:24px;height:24px">
+        <span>التنبيهات</span>
+        <span id="nav-notif-badge" class="nav-badge hidden">0</span>
+      </button>
+      
+      <!-- زر الملف الشخصي -->
+      <button class="nav-btn" data-page="profile" onclick="switchTab('profile', this)">
+        <img src="img/icons/profile.svg" class="nav-icon sh-icon" alt="حسابي" style="width:24px;height:24px">
+        <span>حسابي</span>
+      </button>
+      
+    </nav>
+
+    <!-- قالب إنشاء منشور -->
+    <div id="create-post-modal" class="modal hidden">
+      <div class="modal-content post-modal">
+        <div class="modal-header">
+          <h3>إنشاء منشور جديد</h3>
+          <button class="modal-close" id="close-post-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="post-content" maxlength="10000" placeholder="بماذا تفكر يا عربي؟ ✍️"></textarea>
+          <div class="post-counter"><span id="char-count">0</span>/10000</div>
+          <div id="post-images-preview" class="images-preview"></div>
+          <div class="post-actions">
+            <button class="action-btn" id="btn-add-image">
+              <i class="fas fa-image"></i> صورة            </button>
+            <button class="action-btn">
+              <i class="fas fa-hashtag"></i> وسم
+            </button>
+            <button class="action-btn">
+              <i class="fas fa-smile"></i> تعبير
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancel-post">إلغاء</button>
+          <button class="btn btn-gold" id="publish-post">
+            <span class="btn-text">نشر</span>
+            <span class="btn-loading hidden">جاري النشر...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 🎨 شبوة HUB - الجافاسكريبت الأساسي -->
+  <script>
+    // 🎯 تبديل تبويبات التنقل السفلي
+    function switchTab(pageName, btn) {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      document.querySelectorAll('.nav-icon').forEach(icon => {
+        icon.classList.remove('active');
+      });
+      btn.querySelector('.nav-icon')?.classList.add('active');
+      
+      document.querySelectorAll('.feed-container').forEach(c => {
+        c.classList.remove('active');
+        c.classList.add('hidden');
+      });
+      
+      const target = document.getElementById(`${pageName}-container`);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
+      }
+      
+      console.log('📄 Page loaded:', pageName);
+    }
+    
+    // ❤️ تفاعل زر الإعجاب
+    function handleLikeClick(btn, postId, postOwnerId) {
+      const icon = btn.querySelector('.sh-icon-like');      const countEl = document.getElementById(`likes-${postId}`);
+      
+      if (!icon || !countEl) return;
+      
+      const isLiked = icon.classList.contains('liked');
+      let count = parseInt(countEl.textContent) || 0;
+      
+      if (isLiked) {
+        icon.classList.remove('liked');
+        countEl.textContent = Math.max(0, count - 1);
+      } else {
+        icon.classList.add('liked');
+        countEl.textContent = count + 1;
+      }
+    }
+    
+    // 🔖 تبديل الحفظ
+    function toggleBookmark(btn, postId) {
+      const icon = btn.querySelector('.sh-icon-bookmark');
+      if (icon) {
+        icon.classList.toggle('saved');
+      }
+    }
+    
+    // 💬 تبديل عرض التعليقات
+    function toggleComments(postId) {
+      const section = document.getElementById(`comments-${postId}`);
+      if (section) {
+        section.classList.toggle('show');
+      }
+    }
+    
+    // 🔔 تحديث شارة الإشعارات
+    function updateNotificationBadge(count) {
+      const badges = document.querySelectorAll('#notifications-badge, #nav-notif-badge');
+      const icons = document.querySelectorAll('#notif-icon, #nav-notif-icon');
+      
+      badges.forEach(badge => {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      });
+      
+      icons.forEach(icon => {
+        const svg = icon.closest('.sh-icon') || icon;
+        if (count > 0 && !svg.querySelector('.icon-badge')) {
+          const badge = document.createElement('span');          badge.className = 'icon-badge';
+          badge.textContent = count > 99 ? '99+' : count;
+          svg.style.position = 'relative';
+          svg.appendChild(badge);
+        } else if (count === 0) {
+          const oldBadge = svg.querySelector('.icon-badge');
+          if (oldBadge) oldBadge.remove();
+        }
+      });
+    }
+    
+    // 📝 فتح نموذج النشر
+    function openPostModal() {
+      const modal = document.getElementById('create-post-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.getElementById('post-content')?.focus();
+      }
+    }
+    
+    // ❌ إغلاق المودال
+    document.getElementById('close-post-modal')?.addEventListener('click', () => {
+      document.getElementById('create-post-modal')?.classList.add('hidden');
+      document.getElementById('post-content').value = '';
+      document.getElementById('char-count').textContent = '0';
+    });
+    
+    // 🔢 عدّاد أحرف المنشور
+    document.getElementById('post-content')?.addEventListener('input', (e) => {
+      document.getElementById('char-count').textContent = e.target.value.length;
+    });
+    
+    // 🚪 الخروج المزدوج (لأندرويد)
+    let lastBackPress = 0;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Back' || e.keyCode === 27) {
+        const now = Date.now();
+        const currentPage = document.querySelector('.feed-container.active')?.id.replace('-container', '');
+        
+        if (currentPage === 'feed') {
+          if (now - lastBackPress < 2000) {
+            if (window.AndroidInterface) {
+              window.AndroidInterface.exitApp();
+            }
+          } else {
+            showToast('اضغط مرة أخرى للخروج', 'info', 2000);
+            lastBackPress = now;
+          }
+          e.preventDefault();
+        } else {          switchTab('feed', document.querySelector('.nav-btn[data-page="feed"]'));
+          e.preventDefault();
+        }
+      }
+    });
+    
+    // 🍞 عرض رسالة منبثقة
+    function showToast(message, type = 'info', duration = 3000) {
+      let toast = document.getElementById('global-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'global-toast';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+    
+    // 🔐 تحميل لوحة الأدمن
+    function loadAdminPanel() {
+      window.location.href = 'admin.html';
+    }
+    
+    // 🔄 تبديل تبويبات المحتوى الرائج
+    function switchFeedTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      showToast(`جاري تحميل: ${tabName === 'trending' ? 'الرائج' : 'المتابعين'}...`, 'info');
+    }
+    
+    // 📄 تحميل صفحة
+    function loadPage(pageName) {
+      switchTab(pageName, document.querySelector(`.nav-btn[data-page="${pageName}"]`));
+    }
+    
+    // 🔔 تحديد الكل كمقروء
+    function markAllAsRead() {
+      updateNotificationBadge(0);
+      showToast('تم تحديد الكل كمقروء ✓', 'success');
+    }
+    
+    // 🧪 تجربة: تحديث شارة الإشعارات بعد 3 ثواني
+    setTimeout(() => {
+      updateNotificationBadge(3);
+    }, 3000);
+    
+    console.log('✅ ShabwaHub Frontend Loaded with SVG Icons 🎨✨');
+  </script>
+  <!-- تحميل ملفات الجافاسكريبت الرئيسية (Modules) -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/utils.js"></script>
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/app.js"></script>
+  
+  <!-- 🐛 نظام فحص الأخطاء للموبايل -->
+<div id="debug-panel" style="
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.9);
+  color: #0f0;
+  padding: 10px;
+  font-size: 11px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 99999;
+  display: none;
+  font-family: monospace;
+  border-top: 2px solid #f00;
+"></div>
+
+<script>
+// تفعيل الفحص
+(function() {
+  const debug = document.getElementById('debug-panel');
+  const errors = [];
+  
+  // اعتراض console.log و console.error
+  const oldLog = console.log;
+  const oldError = console.error;
+  
+  console.log = function(msg) {
+    errors.push('📝 ' + msg);
+    debug.innerHTML = errors.join('<br>');
+    debug.style.display = 'block';
+    oldLog.apply(console, arguments);
+  };
+  
+  console.error = function(msg) {
+    errors.push('❌ <span style="color:#f00">' + msg + '</span>');
+    debug.innerHTML = errors.join('<br>');
+    debug.style.display = 'block';
+    oldError.apply(console, arguments);
+  };
+  
+  // إظهار/إخفاء بالنقر المزدوج
+  let tapCount = 0;
+  document.addEventListener('touchstart', function(e) {
+    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+      tapCount++;
+      if (tapCount === 2) {
+        setTimeout(() => {
+          debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+        }, 300);
+      }
+      setTimeout(() => tapCount = 0, 500);
+    }
+  });
+  
+  console.log('✅ نظام الفحص مُفعّل - انقر مرتين لرؤية الأخطاء');
+})();
+</script>
+  <script>
+  window.onerror = function(msg, url, lineNo, columnNo, error) {
+    var string = msg.toLowerCase();
+    var message = [
+      'Message: ' + msg,
+      'URL: ' + url,
+      'Line: ' + lineNo,
+      'Column: ' + columnNo,
+      'Error object: ' + JSON.stringify(error)
+    ].join(' - ');
+    
+    alert("🚨 وجدنا الخطأ! يرجى نسخ هذا النص وإرساله لي:\n\n" + message);
+    return false;
+  };
+</script>
+
+</body>
+</html>
